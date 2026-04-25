@@ -101,7 +101,7 @@ jobs:
     strategy:
       fail-fast: ${{ inputs.test-fail-fast }}
       matrix:
-        python-version: ${{ fromJSON(inputs.test-python-versions || format('["{ 0}"]', inputs.python-version)) }}
+        python-version: ${{ fromJSON(inputs.test-python-versions || format('["{0}"]', inputs.python-version)) }}
         os: ${{ fromJSON(inputs.test-os) }}
     runs-on: ${{ matrix.os }}
     permissions:
