@@ -1,0 +1,118 @@
+# Reusable workflow for publishing Python packages to PyPI.
+#
+# Triggers on version changes in pyproject.toml. Builds with uv,
+# publishes via OIDC trusted publishing, tags the release, and
+# creates a GitHub Release with the dist artifacts.
+#
+# Prerequisites:
+#   - PyPI trusted publisher configured for the repo
+#   - GitHub environment named "pypi" (recommended)
+#
+# Usage:
+#
+#   on:
+#     push:
+#       branches: [main]
+#
+#   jobs:
+#     publish:
+#       uses: KRRT7/github-workflows/.github/workflows/publish-pypi.yml@main
+
+name: Publish to PyPI
+
+on:
+  workflow_call:
+    inputs:
+      tag-prefix:
+        description: "Prefix for git tags (e.g. 'v' produces 'v0.1.0')"
+        type: string
+        default: "v"
+      build-command:
+        description: "Build command"
+        type: string
+        default: "uv build"
+      python-version:
+        description: "Python version for building"
+        type: string
+        default: "3.12"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect version change
+        id: version
+        run: |
+          current=$(grep -m1 'version' pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
+          if git show HEAD~1:pyproject.toml >/dev/null 2>&1; then
+            previous=$(git show HEAD~1:pyproject.toml | grep -m1 'version' | sed 's/.*"\(.*\)".*/\1/')
+          else
+            previous=""
+          fi
+          if [ "$current" = "$previous" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Version unchanged ($current), skipping publish"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "version=$current" >> "$GITHUB_OUTPUT"
+            echo "tag=${{ inputs.tag-prefix }}$current" >> "$GITHUB_OUTPUT"
+            echo "Version changed: $previous -> $current"
+          fi
+
+      - name: Check if tag already exists
+        if: steps.version.outputs.changed == 'true'
+        id: check-tag
+        run: |
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${{ steps.version.outputs.tag }} already exists, skipping"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push git tag
+        if: steps.version.outputs.changed == 'true' && steps.check-tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - uses: astral-sh/setup-uv@v6
+        if: steps.version.outputs.changed == 'true' && steps.check-tag.outputs.exists == 'false'
+        with:
+          python-version: ${{ inputs.python-version }}
+          enable-cache: true
+
+      - name: Build
+        if: steps.version.outputs.changed == 'true' && steps.check-tag.outputs.exists == 'false'
+        run: ${{ inputs.build-command }}
+
+      - name: Publish to PyPI
+        if: steps.version.outputs.changed == 'true' && steps.check-tag.outputs.exists == 'false'
+        run: uv publish
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.changed == 'true' && steps.check-tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: |
+            ## What's Changed
+
+            Release ${{ steps.version.outputs.version }}.
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/commits/${{ steps.version.outputs.tag }}
+          draft: false
+          prerelease: false
+          files: dist/*
