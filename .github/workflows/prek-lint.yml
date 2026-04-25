@@ -43,7 +43,7 @@ jobs:
           uv run ruff check --fix . || true
           uv run ruff format .
           if [ -n "$RESTORE_PATHS" ]; then
-            git checkout HEAD -- $RESTORE_PATHS 2>/dev/null || true
+            git checkout HEAD -- "$RESTORE_PATHS" 2>/dev/null || true
           fi
         env:
           RESTORE_PATHS: ${{ inputs.restore-paths }}
