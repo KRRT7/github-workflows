@@ -71,6 +71,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: reviewdog/action-actionlint@v1
         with:
           fail_on_error: true
@@ -85,13 +87,19 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ inputs.python-version }}
           enable-cache: true
-      - run: ${{ inputs.sync-command }}
+      - run: $SYNC_COMMAND
+        env:
+          SYNC_COMMAND: ${{ inputs.sync-command }}
       - name: Lint
-        run: ${{ inputs.lint-command }}
+        run: $LINT_COMMAND
+        env:
+          LINT_COMMAND: ${{ inputs.lint-command }}
 
   typecheck:
     if: inputs.typecheck-command != ''
@@ -103,13 +111,19 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ inputs.python-version }}
           enable-cache: true
-      - run: ${{ inputs.sync-command }}
+      - run: $SYNC_COMMAND
+        env:
+          SYNC_COMMAND: ${{ inputs.sync-command }}
       - name: Type check
-        run: ${{ inputs.typecheck-command }}
+        run: $TYPECHECK_COMMAND
+        env:
+          TYPECHECK_COMMAND: ${{ inputs.typecheck-command }}
 
   test:
     if: inputs.test-command != ''
@@ -127,11 +141,21 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-      - run: ${{ inputs.sync-command }}
+      - run: $SYNC_COMMAND
+        env:
+          SYNC_COMMAND: ${{ inputs.sync-command }}
+      - name: Export test env
+        run: |
+          echo "$TEST_ENV_JSON" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+        env:
+          TEST_ENV_JSON: ${{ inputs.test-env }}
       - name: Test
-        run: ${{ inputs.test-command }}
-        env: ${{ fromJSON(inputs.test-env) }}
+        run: $TEST_COMMAND
+        env:
+          TEST_COMMAND: ${{ inputs.test-command }}
