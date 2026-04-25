@@ -1,7 +1,8 @@
 # Reusable CI workflow for Python projects using uv.
 #
-# Provides up to three parallel jobs: lint, typecheck, test.
+# Provides up to four parallel jobs: actionlint, lint, typecheck, test.
 # Each is optional — omit the command input (or leave empty) to skip it.
+# actionlint is enabled by default; set actionlint: false to opt out.
 #
 # Usage:
 #
@@ -17,6 +18,10 @@ name: CI (Python + uv)
 on:
   workflow_call:
     inputs:
+      actionlint:
+        description: "Run actionlint on workflow files (set false to opt out)"
+        type: boolean
+        default: true
       python-version:
         description: "Python version (used for lint/typecheck, and test if test-python-versions is empty)"
         type: string
@@ -59,6 +64,17 @@ on:
         default: false
 
 jobs:
+  actionlint:
+    if: inputs.actionlint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-actionlint@v1
+        with:
+          fail_on_error: true
+
   lint:
     if: inputs.lint-command != ''
     runs-on: ubuntu-latest
