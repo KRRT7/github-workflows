@@ -93,7 +93,7 @@ jobs:
         env:
           TAG: ${{ steps.version.outputs.tag }}
 
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
         if: steps.version.outputs.changed == 'true' && steps.check-tag.outputs.exists == 'false'
         with:
           python-version: ${{ inputs.python-version }}
