@@ -4,9 +4,9 @@ on:
   workflow_call:
     inputs:
       auto-fix:
-        description: "Run ruff fix + format and push fixes before prek check"
+        description: "Run ruff fix + format and push fixes before prek check (set false to opt out)"
         type: boolean
-        default: false
+        default: true
       checkout-ref:
         description: "Git ref to checkout (use github.head_ref for auto-fix mode)"
         type: string
@@ -26,7 +26,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.checkout-ref || '' }}
           fetch-depth: 0
