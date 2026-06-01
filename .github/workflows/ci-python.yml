@@ -6,12 +6,12 @@
 #
 # Usage:
 #
-#   jobs:
-#     ci:
-#       uses: KRRT7/github-workflows/.github/workflows/ci-python.yml@main
-#       with:
-#         test-command: "uv run pytest tests/ -v"
-#         test-python-versions: '["3.12", "3.13"]]'
+# jobs:
+#   ci:
+#     uses: KRRT7/github-workflows/.github/workflows/ci-python.yml@main
+#     with:
+#       test-command: "uv run pytest tests/ -v"
+#       test-python-versions: '["3.12", "3.13"]'
 
 name: CI (Python)
 
@@ -86,159 +86,10 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ inputs.python-version }}
-          enable-cache: true
-      - run: ${{ inputs.sync-command }}
-      - name: Lint
-        run: ${{ inputs.lint-command }}
-
-  typecheck:
-    if: inputs.typecheck-command != ''
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: ${{ inputs.working-directory }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ inputs.python-version }}
-          enable-cache: true
-      - run: ${{ inputs.sync-command }}
-      - name: Type check
-        run: ${{ inputs.typecheck-command }}
-
-  test:
-    if: inputs.test-command != ''
-    name: Test (Python ${{ matrix.python-version }} / ${{ matrix.os }})
-    strategy:
-      fail-fast: ${{ inputs.test-fail-fast }}
-      matrix:
-        python-version: ${{ fromJSON(inputs.test-python-versions || format('['"'"'{0}'"'"']', inputs.python-version)) }}
-        os: ${{ fromJSON(inputs.test-os) }}
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: ${{ inputs.working-directory }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-      - run: ${{ inputs.sync-command }}
-      - name: Export test env
-        run: |
-          echo "$TEST_ENV_JSON" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
-        env:
-          TEST_ENV_JSON: ${{ inputs.test-env }}
-      - name: Test
-        run: ${{ inputs.test-command }}
-        env:
-          TEST_COMMAND: ${{ inputs.test-command }}
-#
-# Provides up to four parallel jobs: actionlint, lint, typecheck, test.
-# Each is optional — omit the command input (or leave empty) to skip it.
-# actionlint is enabled by default; set actionlint: false to opt out.
-#
-# Usage:
-#
-#   jobs:
-#     ci:
-#       uses: KRRT7/github-workflows/.github/workflows/ci-python.yml@main
-#       with:
-#         test-command: "uv run pytest tests/ -v"
-#         test-python-versions: '["3.12", "3.13"]'
-
-name: CI (Python)
-
-on:
-  workflow_call:
-    inputs:
-      actionlint:
-        description: "Run actionlint on workflow files (set false to opt out)"
-        type: boolean
-        default: true
-      python-version:
-        description: "Python version (used for lint/typecheck, and test if test-python-versions is empty)"
-        type: string
-        default: "3.12"
-      working-directory:
-        description: "Working directory for all commands (for monorepo subdirs)"
-        type: string
-        default: "."
-      sync-command:
-        description: "Dependency install command"
-        type: string
-        default: "uv sync"
-      lint-command:
-        description: "Lint command (empty to skip)"
-        type: string
-        default: ""
-      typecheck-command:
-        description: "Type-check command (empty to skip)"
-        type: string
-        default: ""
-      test-command:
-        description: "Test command (empty to skip)"
-        type: string
-        default: ""
-      test-env:
-        description: "JSON object of extra env vars for the test job"
-        type: string
-        default: "{}"
-      test-python-versions:
-        description: "JSON array of Python versions for the test matrix (overrides python-version for test job)"
-        type: string
-        default: ""
-      test-os:
-        description: "JSON array of runner OSes for the test matrix"
-        type: string
-        default: '["ubuntu-latest"]'
-      test-fail-fast:
-        description: "Stop remaining test matrix jobs on first failure"
-        type: boolean
-        default: false
-
-jobs:
-  actionlint:
-    if: inputs.actionlint
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
-      - uses: reviewdog/action-actionlint@v1
-        with:
-          fail_on_error: true
-
-  lint:
-    if: inputs.lint-command != ''
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: ${{ inputs.working-directory }}
-    steps:
-<<<<<<< HEAD
-      - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v7
-=======
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@v6
->>>>>>> main
         with:
           python-version: ${{ inputs.python-version }}
           enable-cache: true
@@ -259,15 +110,10 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-<<<<<<< HEAD
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v7
-=======
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v6
->>>>>>> main
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ inputs.python-version }}
           enable-cache: true
@@ -294,15 +140,10 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-<<<<<<< HEAD
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v7
-=======
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v6
->>>>>>> main
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
